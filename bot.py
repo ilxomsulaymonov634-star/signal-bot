@@ -14,8 +14,9 @@ ADMIN_ID = 7850429577  # Sizning Telegram ID raqamingiz
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
-# Mini ilova havolasi (Agar o'zingizning saytingiz bo'lsa shu yerga yozasiz, hozircha namunaviy havola)
-MINI_APP_URL = "https://t.me/Smarsgnalbot"  # O'z mini ilovangiz havolasini qo'yasiz
+# Telegram talablariga mos keladigan haqiqiy test WebApp havolasi
+# (Keyinchalik o'z saytingiz havolasiga o'zgartirishingiz mumkin)
+MINI_APP_URL = "https://taplink.cc"  # Yoki boshqa istalgan https:// bilan boshlanadigan havola
 
 # Asosiy menyu (Foydalanuvchilar uchun)
 def main_menu():
@@ -44,7 +45,6 @@ async def start_command(message: Message):
     user_id = message.from_user.id
     username = message.from_user.username or "Noma'lum"
     
-    # Referral havoladan kelganligini tekshirish
     args = message.text.split()
     referred_by = None
     if len(args) > 1 and args[1].startswith("ref_"):
@@ -53,14 +53,13 @@ async def start_command(message: Message):
         except ValueError:
             pass
 
-    # Foydalanuvchini bazaga qo'shish
     add_user(user_id, username, referred_by)
     
     kb = admin_menu() if user_id == ADMIN_ID else main_menu()
     
     await message.answer(
         "<b>Pocket Option Pro Botga xush kelibsiz!</b>\n\n"
-        "Quyidagi <b>📈 Signal</b> tugmasini bosib mini ilovani ochishingiz va valyuta, vaqt hamda signallarni tanlashingiz mumkin.",
+        "Quyidagi <b>📈 Signal</b> tugmasini bosib mini ilovani ochishingiz mumkin.",
         reply_markup=kb,
         parse_mode="HTML"
     )
@@ -148,7 +147,7 @@ async def make_vip(message: Message):
     except ValueError:
         await message.answer("⚠️ ID raqam faqat raqamlardan iborat bo'lishi kerak!")
 
-# Render serveri uxlab qolmasligi uchun mini web-server
+# Render serveri uchun mini web-server
 async def handle(request):
     return web.Response(text="Bot is running!")
 
