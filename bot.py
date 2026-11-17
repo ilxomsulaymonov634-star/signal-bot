@@ -55,7 +55,7 @@ async def start_command(message: Message):
     
     await message.answer(
         "<b>Pocket Option Pro Botga xush kelibsiz!</b>\n\n"
-        "Quyidagi <b>📈 Signal</b> tugmasini bosib valyuta va vaqtni tanlang.",
+        "Quyidagi <b>📈 Signal</b> tugmasini bosib aktivni tanlang.",
         reply_markup=kb,
         parse_mode="HTML"
     )
@@ -143,11 +143,12 @@ async def make_vip(message: Message):
     except ValueError:
         await message.answer("⚠️ ID raqam faqat raqamlardan iborat bo'lishi kerak!")
 
-# 1-QADAM: "📈 Signal" bosilganda valyuta tanlash menyusi chiqadi
+# 1-QADAM: "📈 Signal" bosilganda Valyuta, Kripto va Aksiyalar chiqadi
 @dp.message(F.text == "📈 Signal")
 async def select_currency(message: Message):
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
+            # Valyutalar
             [
                 InlineKeyboardButton(text="💶 EUR/USD", callback_data="curr_EUR/USD"),
                 InlineKeyboardButton(text="💷 GBP/USD", callback_data="curr_GBP/USD")
@@ -155,12 +156,34 @@ async def select_currency(message: Message):
             [
                 InlineKeyboardButton(text="💴 USD/JPY", callback_data="curr_USD/JPY"),
                 InlineKeyboardButton(text="🇦🇺 AUD/CAD", callback_data="curr_AUD/CAD")
+            ],
+            [
+                InlineKeyboardButton(text="🇨🇦 USD/CAD", callback_data="curr_USD/CAD"),
+                InlineKeyboardButton(text="🇳🇿 AUD/NZD", callback_data="curr_AUD/NZD")
+            ],
+            # Kriptovalyutalar
+            [
+                InlineKeyboardButton(text="🪙 BTC/USD", callback_data="curr_BTC/USD"),
+                InlineKeyboardButton(text="🪙 ETH/USD", callback_data="curr_ETH/USD")
+            ],
+            [
+                InlineKeyboardButton(text="🪙 XRP/USD", callback_data="curr_XRP/USD"),
+                InlineKeyboardButton(text="🪙 LTC/USD", callback_data="curr_LTC/USD")
+            ],
+            # Aksiyalar
+            [
+                InlineKeyboardButton(text="🍏 AAPL (Apple)", callback_data="curr_AAPL"),
+                InlineKeyboardButton(text="🚗 TSLA (Tesla)", callback_data="curr_TSLA")
+            ],
+            [
+                InlineKeyboardButton(text="🔍 GOOGL (Google)", callback_data="curr_GOOGL"),
+                InlineKeyboardButton(text="📦 AMZN (Amazon)", callback_data="curr_AMZN")
             ]
         ]
     )
-    await message.answer("💱 <b>Valyuta juftligini tanlang:</b>", reply_markup=keyboard, parse_mode="HTML")
+    await message.answer("📊 <b>Kerakli bozor va aktivni tanlang:</b>", reply_markup=keyboard, parse_mode="HTML")
 
-# 2-QADAM: Valyuta tanlangach, vaqtni tanlash menyusi chiqadi
+# 2-QADAM: Aktiv tanlangach, vaqtni tanlash menyusi chiqadi
 @dp.callback_query(F.data.startswith("curr_"))
 async def select_time(callback: CallbackQuery):
     currency = callback.data.replace("curr_", "")
