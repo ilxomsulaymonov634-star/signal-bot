@@ -143,12 +143,11 @@ async def make_vip(message: Message):
     except ValueError:
         await message.answer("⚠️ ID raqam faqat raqamlardan iborat bo'lishi kerak!")
 
-# 1-QADAM: "📈 Signal" bosilganda Valyuta, Kripto va Aksiyalar chiqadi
+# 1-QADAM: "📈 Signal" bosilganda aktivlarni chiqarish
 @dp.message(F.text == "📈 Signal")
 async def select_currency(message: Message):
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
-            # Valyutalar
             [
                 InlineKeyboardButton(text="💶 EUR/USD", callback_data="curr_EUR/USD"),
                 InlineKeyboardButton(text="💷 GBP/USD", callback_data="curr_GBP/USD")
@@ -161,7 +160,6 @@ async def select_currency(message: Message):
                 InlineKeyboardButton(text="🇨🇦 USD/CAD", callback_data="curr_USD/CAD"),
                 InlineKeyboardButton(text="🇳🇿 AUD/NZD", callback_data="curr_AUD/NZD")
             ],
-            # Kriptovalyutalar
             [
                 InlineKeyboardButton(text="🪙 BTC/USD", callback_data="curr_BTC/USD"),
                 InlineKeyboardButton(text="🪙 ETH/USD", callback_data="curr_ETH/USD")
@@ -170,7 +168,6 @@ async def select_currency(message: Message):
                 InlineKeyboardButton(text="🪙 XRP/USD", callback_data="curr_XRP/USD"),
                 InlineKeyboardButton(text="🪙 LTC/USD", callback_data="curr_LTC/USD")
             ],
-            # Aksiyalar
             [
                 InlineKeyboardButton(text="🍏 AAPL (Apple)", callback_data="curr_AAPL"),
                 InlineKeyboardButton(text="🚗 TSLA (Tesla)", callback_data="curr_TSLA")
@@ -183,29 +180,29 @@ async def select_currency(message: Message):
     )
     await message.answer("📊 <b>Kerakli bozor va aktivni tanlang:</b>", reply_markup=keyboard, parse_mode="HTML")
 
-# 2-QADAM: Aktiv tanlangach, 5 sekunddan 2 soatgacha bo'lgan vaqt oralig'i chiqadi
+# 2-QADAM: Aktiv tanlangach, vaqt oralig'ini chiqarish
 @dp.callback_query(F.data.startswith("curr_"))
 async def select_time(callback: CallbackQuery):
     currency = callback.data.replace("curr_", "")
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton(text="⚡️ 5 soniya", callback_data=f"time_{currency}_5s"),
-                InlineKeyboardButton(text="⚡️ 15 soniya", callback_data=f"time_{currency}_15s"),
-                InlineKeyboardButton(text="⚡️ 30 soniya", callback_data=f"time_{currency}_30s")
+                InlineKeyboardButton(text="⚡️ 5s", callback_data=f"time_{currency}_5s"),
+                InlineKeyboardButton(text="⚡️ 15s", callback_data=f"time_{currency}_15s"),
+                InlineKeyboardButton(text="⚡️ 30s", callback_data=f"time_{currency}_30s")
             ],
             [
-                InlineKeyboardButton(text="⏱ 1 minut", callback_data=f"time_{currency}_1m"),
-                InlineKeyboardButton(text="⏱ 2 minut", callback_data=f"time_{currency}_2m"),
-                InlineKeyboardButton(text="⏱ 5 minut", callback_data=f"time_{currency}_5m")
+                InlineKeyboardButton(text="⏱ 1m", callback_data=f"time_{currency}_1m"),
+                InlineKeyboardButton(text="⏱ 2m", callback_data=f"time_{currency}_2m"),
+                InlineKeyboardButton(text="⏱ 5m", callback_data=f"time_{currency}_5m")
             ],
             [
-                InlineKeyboardButton(text="⏱ 15 minut", callback_data=f"time_{currency}_15m"),
-                InlineKeyboardButton(text="⏱ 30 minut", callback_data=f"time_{currency}_30m")
+                InlineKeyboardButton(text="⏱ 15m", callback_data=f"time_{currency}_15m"),
+                InlineKeyboardButton(text="⏱ 30m", callback_data=f"time_{currency}_30m")
             ],
             [
-                InlineKeyboardButton(text="🕒 1 soat", callback_data=f"time_{currency}_1h"),
-                InlineKeyboardButton(text="🕒 2 soat", callback_data=f"time_{currency}_2h")
+                InlineKeyboardButton(text="🕒 1h", callback_data=f"time_{currency}_1h"),
+                InlineKeyboardButton(text="🕒 2h", callback_data=f"time_{currency}_2h")
             ]
         ]
     )
@@ -216,14 +213,13 @@ async def select_time(callback: CallbackQuery):
     )
     await callback.answer()
 
-# 3-QADAM: Vaqt tanlangach, tayyor signalni chiqarib berish
+# 3-QADAM: Vaqt tanlangach, signalni yuborish
 @dp.callback_query(F.data.startswith("time_"))
 async def give_final_signal(callback: CallbackQuery):
     parts = callback.data.split("_")
     currency = parts[1]
     time_val = parts[2]
     
-    # Vaqtni chiroyli ko'rinishga keltirish
     time_map = {
         "5s": "5 soniya", "15s": "15 soniya", "30s": "30 soniya",
         "1m": "1 minut", "2m": "2 minut", "5m": "5 minut",
@@ -235,8 +231,11 @@ async def give_final_signal(callback: CallbackQuery):
     user_id = callback.from_user.id
     vip = check_vip(user_id)
     
-    await callback.message.edit_text("🔄 Bozor holati tahlil qilinmoqda (AI)...")
-    await asyncio.sleep(1)
+    # Eski menyuni yopamiz va yangi xabar yuboramiz
+    await callback.message.delete()
+    
+    wait_msg = await callback.message.answer(f"🔄 <b>{currency}</b> uchun {readable_time} tahlil qilinmoqda...")
+    await asyncio.sleep(1.5)
     
     signal = random.choice(["BUY 🟢 (Olish)", "SELL 🔴 (Sotish)"])
     
@@ -257,7 +256,7 @@ async def give_final_signal(callback: CallbackQuery):
             f"<i>🔒 Haqiqiy signallar uchun VIP status kerak. Do'stlaringizni taklif qiling!</i>"
         )
         
-    await callback.message.edit_text(text, parse_mode="HTML")
+    await wait_msg.edit_text(text, parse_mode="HTML")
     await callback.answer()
 
 # Render serveri uchun mini web-server
