@@ -183,18 +183,29 @@ async def select_currency(message: Message):
     )
     await message.answer("📊 <b>Kerakli bozor va aktivni tanlang:</b>", reply_markup=keyboard, parse_mode="HTML")
 
-# 2-QADAM: Aktiv tanlangach, vaqtni tanlash menyusi chiqadi
+# 2-QADAM: Aktiv tanlangach, 5 sekunddan 2 soatgacha bo'lgan vaqt oralig'i chiqadi
 @dp.callback_query(F.data.startswith("curr_"))
 async def select_time(callback: CallbackQuery):
     currency = callback.data.replace("curr_", "")
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton(text="⏱ 1 minut", callback_data=f"time_{currency}_1"),
-                InlineKeyboardButton(text="⏱ 3 minut", callback_data=f"time_{currency}_3")
+                InlineKeyboardButton(text="⚡️ 5 soniya", callback_data=f"time_{currency}_5s"),
+                InlineKeyboardButton(text="⚡️ 15 soniya", callback_data=f"time_{currency}_15s"),
+                InlineKeyboardButton(text="⚡️ 30 soniya", callback_data=f"time_{currency}_30s")
             ],
             [
-                InlineKeyboardButton(text="⏱ 5 minut", callback_data=f"time_{currency}_5")
+                InlineKeyboardButton(text="⏱ 1 minut", callback_data=f"time_{currency}_1m"),
+                InlineKeyboardButton(text="⏱ 2 minut", callback_data=f"time_{currency}_2m"),
+                InlineKeyboardButton(text="⏱ 5 minut", callback_data=f"time_{currency}_5m")
+            ],
+            [
+                InlineKeyboardButton(text="⏱ 15 minut", callback_data=f"time_{currency}_15m"),
+                InlineKeyboardButton(text="⏱ 30 minut", callback_data=f"time_{currency}_30m")
+            ],
+            [
+                InlineKeyboardButton(text="🕒 1 soat", callback_data=f"time_{currency}_1h"),
+                InlineKeyboardButton(text="🕒 2 soat", callback_data=f"time_{currency}_2h")
             ]
         ]
     )
@@ -210,7 +221,16 @@ async def select_time(callback: CallbackQuery):
 async def give_final_signal(callback: CallbackQuery):
     parts = callback.data.split("_")
     currency = parts[1]
-    time_min = parts[2]
+    time_val = parts[2]
+    
+    # Vaqtni chiroyli ko'rinishga keltirish
+    time_map = {
+        "5s": "5 soniya", "15s": "15 soniya", "30s": "30 soniya",
+        "1m": "1 minut", "2m": "2 minut", "5m": "5 minut",
+        "15m": "15 minut", "30m": "30 minut",
+        "1h": "1 soat", "2h": "2 soat"
+    }
+    readable_time = time_map.get(time_val, time_val)
     
     user_id = callback.from_user.id
     vip = check_vip(user_id)
@@ -224,7 +244,7 @@ async def give_final_signal(callback: CallbackQuery):
         text = (
             f"🔥 <b>PRO SIGNAL (REAL)</b> 🔥\n\n"
             f"📊 <b>Aktiv:</b> {currency} (OTC)\n"
-            f"⏱ <b>Vaqt:</b> {time_min} minut\n"
+            f"⏱ <b>Vaqt:</b> {readable_time}\n"
             f"🎯 <b>Prognoz:</b> <b>{signal}</b>\n\n"
             f"💡 <i>Professional rejim: Barcha imkoniyatlar ochiq!</i>"
         )
@@ -232,7 +252,7 @@ async def give_final_signal(callback: CallbackQuery):
         text = (
             f"⚠️ <b>DEMO SIGNAL</b>\n\n"
             f"📊 <b>Aktiv:</b> {currency}\n"
-            f"⏱ <b>Vaqt:</b> {time_min} minut\n"
+            f"⏱ <b>Vaqt:</b> {readable_time}\n"
             f"🎯 <b>Prognoz:</b> <b>{signal}</b>\n\n"
             f"<i>🔒 Haqiqiy signallar uchun VIP status kerak. Do'stlaringizni taklif qiling!</i>"
         )
