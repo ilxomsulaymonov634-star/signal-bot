@@ -1,7 +1,7 @@
 import sqlite3
 
-# Xatoliklar bo'lmasligi uchun mutlaqo yangi baza nomini beramiz
-db = sqlite3.connect("signal_pro.db")
+# Xatoliklar bo'lmasligi uchun baza nomi
+db = sqlite3.connect("signal_pro.db", check_same_thread=False)
 cursor = db.cursor()
 
 cursor.execute("""
@@ -9,17 +9,26 @@ CREATE TABLE IF NOT EXISTS users (
     user_id INTEGER PRIMARY KEY,
     username TEXT,
     vip INTEGER DEFAULT 0,
-    pocket_id TEXT DEFAULT NULL
+    pocket_id TEXT DEFAULT NULL,
+    referred_by INTEGER DEFAULT NULL,
+    invited_count INTEGER DEFAULT 0
 )
 """)
 db.commit()
 
-def add_user(user_id, username):
+def add_user(user_id, username, referred_by=None):
     cursor.execute(
-        "INSERT OR IGNORE INTO users (user_id, username) VALUES (?, ?)",
-        (user_id, username)
+        "INSERT OR IGNORE INTO users (user_id, username, referred_by) VALUES (?, ?, ?)",
+        (user_id, username, referred_by)
     )
     db.commit()
+    
+    if referred_by and cursor.rowcount > 0 and referred_by != user_id:
+        cursor.execute(
+            "UPDATE users SET invited_count = invited_count + 1 WHERE user_id = ?",
+            (referred_by,)
+        )
+        db.commit()
 
 def get_users_count():
     cursor.execute("SELECT COUNT(*) FROM users")
@@ -40,7 +49,14 @@ def check_vip(user_id):
         return result[0]
     return 0
 
-# Yangi funksiya: ID saqlash
 def update_pocket_id(user_id, pocket_id):
     cursor.execute("UPDATE users SET pocket_id = ? WHERE user_id = ?", (pocket_id, user_id))
     db.commit()
+
+# Ushbu funksiya yetishmayotgan edi:
+def get_invited_count(user_id):
+    cursor.execute("SELECT invited_count FROM users WHERE user_id = ?", (user_id,))
+    result = cursor.fetchone()
+    if result:
+        return result[0]
+    return 0
