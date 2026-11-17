@@ -206,57 +206,71 @@ async def select_time(callback: CallbackQuery):
             ]
         ]
     )
-    await callback.message.edit_text(
-        f"📊 Tanlangan aktiv: <b>{currency}</b>\n\n⏱ <b>Vaqt oralig'ini tanlang:</b>",
-        reply_markup=keyboard,
-        parse_mode="HTML"
-    )
+    # Eski menyuni yangilaymiz
+    try:
+        await callback.message.edit_text(
+            f"📊 Tanlangan aktiv: <b>{currency}</b>\n\n⏱ <b>Vaqt oralig'ini tanlang:</b>",
+            reply_markup=keyboard,
+            parse_mode="HTML"
+        )
+    except Exception:
+        pass
     await callback.answer()
 
 # 3-QADAM: Vaqt tanlangach, signalni yuborish
 @dp.callback_query(F.data.startswith("time_"))
 async def give_final_signal(callback: CallbackQuery):
-    parts = callback.data.split("_")
-    currency = parts[1]
-    time_val = parts[2]
-    
-    time_map = {
-        "5s": "5 soniya", "15s": "15 soniya", "30s": "30 soniya",
-        "1m": "1 minut", "2m": "2 minut", "5m": "5 minut",
-        "15m": "15 minut", "30m": "30 minut",
-        "1h": "1 soat", "2h": "2 soat"
-    }
-    readable_time = time_map.get(time_val, time_val)
-    
-    user_id = callback.from_user.id
-    vip = check_vip(user_id)
-    
-    # Eski menyuni yopamiz va yangi xabar yuboramiz
-    await callback.message.delete()
-    
-    wait_msg = await callback.message.answer(f"🔄 <b>{currency}</b> uchun {readable_time} tahlil qilinmoqda...")
-    await asyncio.sleep(1.5)
-    
-    signal = random.choice(["BUY 🟢 (Olish)", "SELL 🔴 (Sotish)"])
-    
-    if user_id == ADMIN_ID or vip == 1:
-        text = (
-            f"🔥 <b>PRO SIGNAL (REAL)</b> 🔥\n\n"
-            f"📊 <b>Aktiv:</b> {currency} (OTC)\n"
-            f"⏱ <b>Vaqt:</b> {readable_time}\n"
-            f"🎯 <b>Prognoz:</b> <b>{signal}</b>\n\n"
-            f"💡 <i>Professional rejim: Barcha imkoniyatlar ochiq!</i>"
-        )
-    else:
-        text = (
-            f"⚠️ <b>DEMO SIGNAL</b>\n\n"
-            f"📊 <b>Aktiv:</b> {currency}\n"
-            f"⏱ <b>Vaqt:</b> {readable_time}\n"
-            f"🎯 <b>Prognoz:</b> <b>{signal}</b>\n\n"
-            f"<i>🔒 Haqiqiy signallar uchun VIP status kerak. Do'stlaringizni taklif qiling!</i>"
+    try:
+        parts = callback.data.split("_")
+        currency = parts[1]
+        time_val = parts[2]
+        
+        time_map = {
+            "5s": "5 soniya", "15s": "15 soniya", "30s": "30 soniya",
+            "1m": "1 minut", "2m": "2 minut", "5m": "5 minut",
+            "15m": "15 minut", "30m": "30 minut",
+            "1h": "1 soat", "2h": "2 soat"
+        }
+        readable_time = time_map.get(time_val, time_val)
+        
+        user_id = callback.from_user.id
+        vip = check_vip(user_id)
+        
+        # Eski tugmalar turgan xabarni o'chirib yuboramiz
+        await callback.message.delete()
+        
+        # Tahlil jarayoni haqida yangi xabar yuboramiz
+        wait_msg = await bot.send_message(
+            chat_id=callback.message.chat.id,
+            text=f"🔄 <b>{currency}</b> ({readable_time}) bozor tahlil qilinmoqda...",
+            parse_mode="HTML"
         )
         
-    await wait_msg.edit_text(text, parse_mode="HTML")
+        await asyncio.sleep(1.5)
+        
+        signal = random.choice(["BUY 🟢 (Olish)", "SELL 🔴 (Sotish)"])
+        
+        if user_id == ADMIN_ID or vip == 1:
+            text = (
+                f"🔥 <b>PRO SIGNAL (REAL)</b> 🔥\n\n"
+                f"📊 <b>Aktiv:</b> {currency} (OTC)\n"
+                f"⏱ <b>Vaqt:</b> {readable_time}\n"
+                f"🎯 <b>Prognoz:</b> <b>{signal}</b>\n\n"
+                f"💡 <i>Professional rejim: Barcha imkoniyatlar ochiq!</i>"
+            )
+        else:
+            text = (
+                f"⚠️ <b>DEMO SIGNAL</b>\n\n"
+                f"📊 <b>Aktiv:</b> {currency}\n"
+                f"⏱ <b>Vaqt:</b> {readable_time}\n"
+                f"🎯 <b>Prognoz:</b> <b>{signal}</b>\n\n"
+                f"<i>🔒 Haqiqiy signallar uchun VIP status kerak. Do'stlaringizni taklif qiling!</i>"
+            )
+            
+        await wait_msg.edit_text(text, parse_mode="HTML")
+    except Exception as e:
+        logging.error(f"Xatolik: {e}")
+    
     await callback.answer()
 
 # Render serveri uchun mini web-server
