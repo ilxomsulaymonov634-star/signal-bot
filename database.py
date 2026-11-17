@@ -16,6 +16,19 @@ CREATE TABLE IF NOT EXISTS users (
 """)
 db.commit()
 
+# Agar eski bazada bu ustunlar bo'lmasa, xatolik bermasdan o'zi qo'shib ketadi:
+try:
+    cursor.execute("ALTER TABLE users ADD COLUMN referred_by INTEGER DEFAULT NULL")
+    db.commit()
+except sqlite3.OperationalError:
+    pass
+
+try:
+    cursor.execute("ALTER TABLE users ADD COLUMN invited_count INTEGER DEFAULT 0")
+    db.commit()
+except sqlite3.OperationalError:
+    pass
+
 def add_user(user_id, username, referred_by=None):
     cursor.execute(
         "INSERT OR IGNORE INTO users (user_id, username, referred_by) VALUES (?, ?, ?)",
@@ -53,7 +66,6 @@ def update_pocket_id(user_id, pocket_id):
     cursor.execute("UPDATE users SET pocket_id = ? WHERE user_id = ?", (pocket_id, user_id))
     db.commit()
 
-# Ushbu funksiya yetishmayotgan edi:
 def get_invited_count(user_id):
     cursor.execute("SELECT invited_count FROM users WHERE user_id = ?", (user_id,))
     result = cursor.fetchone()
