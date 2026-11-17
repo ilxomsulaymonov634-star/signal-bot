@@ -3,7 +3,7 @@ import random
 import logging
 from aiogram import Bot, Dispatcher, F, types
 from aiogram.filters import Command, CommandStart
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
 from aiohttp import web
 
 from database import add_user, get_users_count, give_vip, check_vip, update_pocket_id, get_invited_count, get_all_users
@@ -14,15 +14,11 @@ ADMIN_ID = 7850429577  # Sizning Telegram ID raqamingiz
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
-# Telegram talablariga mos keladigan haqiqiy test WebApp havolasi
-# (Keyinchalik o'z saytingiz havolasiga o'zgartirishingiz mumkin)
-MINI_APP_URL = "https://taplink.cc"  # Yoki boshqa istalgan https:// bilan boshlanadigan havola
-
 # Asosiy menyu (Foydalanuvchilar uchun)
 def main_menu():
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="📈 Signal", web_app=WebAppInfo(url=MINI_APP_URL))],
+            [KeyboardButton(text="📈 Signal")],
             [KeyboardButton(text="📊 Statistika"), KeyboardButton(text="👑 VIP")],
             [KeyboardButton(text="👥 Referal")]
         ],
@@ -33,7 +29,7 @@ def main_menu():
 def admin_menu():
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="📈 Signal", web_app=WebAppInfo(url=MINI_APP_URL))],
+            [KeyboardButton(text="📈 Signal")],
             [KeyboardButton(text="📊 Statistika"), KeyboardButton(text="👑 VIP")],
             [KeyboardButton(text="👥 Referal"), KeyboardButton(text="⚙️ Admin Panel")]
         ],
@@ -59,7 +55,7 @@ async def start_command(message: Message):
     
     await message.answer(
         "<b>Pocket Option Pro Botga xush kelibsiz!</b>\n\n"
-        "Quyidagi <b>📈 Signal</b> tugmasini bosib mini ilovani ochishingiz mumkin.",
+        "Quyidagi <b>📈 Signal</b> tugmasini bosib valyuta va vaqtni tanlang.",
         reply_markup=kb,
         parse_mode="HTML"
     )
@@ -146,6 +142,80 @@ async def make_vip(message: Message):
         await bot.send_message(target_id, "👑 <b>TABRIKLAYMIZ!</b>\n\nSizga admin tomonidan VIP status berildi!", parse_mode="HTML")
     except ValueError:
         await message.answer("⚠️ ID raqam faqat raqamlardan iborat bo'lishi kerak!")
+
+# 1-QADAM: "📈 Signal" bosilganda valyuta tanlash menyusi chiqadi
+@dp.message(F.text == "📈 Signal")
+async def select_currency(message: Message):
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text="💶 EUR/USD", callback_data="curr_EUR/USD"),
+                InlineKeyboardButton(text="💷 GBP/USD", callback_data="curr_GBP/USD")
+            ],
+            [
+                InlineKeyboardButton(text="💴 USD/JPY", callback_data="curr_USD/JPY"),
+                InlineKeyboardButton(text="🇦🇺 AUD/CAD", callback_data="curr_AUD/CAD")
+            ]
+        ]
+    )
+    await message.answer("💱 <b>Valyuta juftligini tanlang:</b>", reply_markup=keyboard, parse_mode="HTML")
+
+# 2-QADAM: Valyuta tanlangach, vaqtni tanlash menyusi chiqadi
+@dp.callback_query(F.data.startswith("curr_"))
+async def select_time(callback: CallbackQuery):
+    currency = callback.data.replace("curr_", "")
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text="⏱ 1 minut", callback_data=f"time_{currency}_1"),
+                InlineKeyboardButton(text="⏱ 3 minut", callback_data=f"time_{currency}_3")
+            ],
+            [
+                InlineKeyboardButton(text="⏱ 5 minut", callback_data=f"time_{currency}_5")
+            ]
+        ]
+    )
+    await callback.message.edit_text(
+        f"📊 Tanlangan aktiv: <b>{currency}</b>\n\n⏱ <b>Vaqt oralig'ini tanlang:</b>",
+        reply_markup=keyboard,
+        parse_mode="HTML"
+    )
+    await callback.answer()
+
+# 3-QADAM: Vaqt tanlangach, tayyor signalni chiqarib berish
+@dp.callback_query(F.data.startswith("time_"))
+async def give_final_signal(callback: CallbackQuery):
+    parts = callback.data.split("_")
+    currency = parts[1]
+    time_min = parts[2]
+    
+    user_id = callback.from_user.id
+    vip = check_vip(user_id)
+    
+    await callback.message.edit_text("🔄 Bozor holati tahlil qilinmoqda (AI)...")
+    await asyncio.sleep(1)
+    
+    signal = random.choice(["BUY 🟢 (Olish)", "SELL 🔴 (Sotish)"])
+    
+    if user_id == ADMIN_ID or vip == 1:
+        text = (
+            f"🔥 <b>PRO SIGNAL (REAL)</b> 🔥\n\n"
+            f"📊 <b>Aktiv:</b> {currency} (OTC)\n"
+            f"⏱ <b>Vaqt:</b> {time_min} minut\n"
+            f"🎯 <b>Prognoz:</b> <b>{signal}</b>\n\n"
+            f"💡 <i>Professional rejim: Barcha imkoniyatlar ochiq!</i>"
+        )
+    else:
+        text = (
+            f"⚠️ <b>DEMO SIGNAL</b>\n\n"
+            f"📊 <b>Aktiv:</b> {currency}\n"
+            f"⏱ <b>Vaqt:</b> {time_min} minut\n"
+            f"🎯 <b>Prognoz:</b> <b>{signal}</b>\n\n"
+            f"<i>🔒 Haqiqiy signallar uchun VIP status kerak. Do'stlaringizni taklif qiling!</i>"
+        )
+        
+    await callback.message.edit_text(text, parse_mode="HTML")
+    await callback.answer()
 
 # Render serveri uchun mini web-server
 async def handle(request):
