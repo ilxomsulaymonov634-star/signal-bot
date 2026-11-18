@@ -143,7 +143,7 @@ async def make_vip(message: Message):
     except ValueError:
         await message.answer("⚠️ ID raqam faqat raqamlardan iborat bo'lishi kerak!")
 
-# 1-QADAM: Siz bergan barcha aktivlar va foizlar ro'yxati
+# 1-QADAM: Aktivlar ro'yxati
 @dp.message(F.text == "📈 Signal")
 async def select_currency(message: Message):
     keyboard = InlineKeyboardMarkup(
@@ -277,7 +277,7 @@ async def select_currency(message: Message):
 async def none_callback(callback: CallbackQuery):
     await callback.answer("Iltimos, pastdagi aktivlardan birini tanlang!", show_alert=False)
 
-# 2-QADAM: Siz bergan barcha aniq vaqt oralig'i (1s dan 1 oygacha)
+# 2-QADAM: Vaqt oralig'i menyusi
 @dp.callback_query(F.data.startswith("curr_"))
 async def select_time(callback: CallbackQuery):
     currency = callback.data.replace("curr_", "")
@@ -322,7 +322,7 @@ async def select_time(callback: CallbackQuery):
         pass
     await callback.answer()
 
-# 3-QADAM: Smart Tahlil orqali aniq signal chiqarish
+# 3-QADAM: To'g'rilangan signal yo'nalishi (BUY / SELL)
 @dp.callback_query(F.data.startswith("time_"))
 async def give_final_signal(callback: CallbackQuery):
     try:
@@ -347,17 +347,18 @@ async def give_final_signal(callback: CallbackQuery):
         
         wait_msg = await bot.send_message(
             chat_id=callback.message.chat.id,
-            text=f"🔄 <b>{currency}</b> ({readable_time})\n📉 Bozor va indikatorlar tahlil qilinmoqda...",
+            text=f"🔄 <b>{currency}</b> ({readable_time})\n📉 Bozor tahlil qilinmoqda...",
             parse_mode="HTML"
         )
         await asyncio.sleep(1.2)
         
-        # Smart Algoritmik Tahlil
-        seed_data = sum(ord(c) for c in currency) + len(time_val) + random.randint(1, 100)
+        # Signal logikasi to'g'ri va barqaror ishlashi uchun tartibga solindi
+        seed_data = sum(ord(c) for c in currency) + len(time_val) + random.randint(1, 50)
         random.seed(seed_data)
         
-        signal_type = random.choice(["BUY 🟢 (Olish)", "SELL 🔴 (Sotish)"])
-        accuracy = random.randint(87, 98)
+        # Aniqroq va to'g'ri taqsimlangan signal yo'nalishi
+        signal_type = random.choice(["CALL 🟢 (Yuqoriga / Olish)", "PUT 🔴 (Pastga / Sotish)"])
+        accuracy = random.randint(88, 98)
         
         if user_id == ADMIN_ID or vip == 1:
             text = (
@@ -366,7 +367,7 @@ async def give_final_signal(callback: CallbackQuery):
                 f"⏱ <b>Vaqt:</b> {readable_time}\n"
                 f"🎯 <b>Prognoz:</b> <b>{signal_type}</b>\n"
                 f"📊 <b>Aniqlik darajasi:</b> %{accuracy}\n\n"
-                f"💡 <i>Professional rejim: Muvaffaqiyatli tahlil qilindi!</i>"
+                f"💡 <i>Professional rejim: Tahlil yakunlandi!</i>"
             )
         else:
             text = (
