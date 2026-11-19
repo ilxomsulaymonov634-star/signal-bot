@@ -1,4 +1,5 @@
 import os
+import asyncio
 import threading
 import time
 import logging
@@ -67,6 +68,9 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 def main():
     if not BOT_TOKEN:
         raise ValueError("BOT_TOKEN topilmadi!")
+
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
 
     threading.Thread(target=run_flask, daemon=True).start()
     threading.Thread(target=keep_alive_loop, daemon=True).start()
