@@ -14,13 +14,11 @@ logging.basicConfig(level=logging.INFO)
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "9016084815:AAG4zrRit9MHn6KFM0CX5Q4_7HcpKw7HIWw")
 ADMIN_ID = int(os.environ.get("ADMIN_ID", "7850429577"))
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 KEEP_ALIVE_URL = os.environ.get("KEEP_ALIVE_URL", "")
 
 CONTACT_PHONE = "+998900170582"
 INSTAGRAM_HANDLE = "@poydevor2413"
 
-# Flask keep-alive server
 app = Flask(__name__)
 
 @app.route("/")
@@ -33,15 +31,12 @@ def run_flask():
 
 def keep_alive_ping():
     while True:
-        time.sleep(180)  # 3 daqiqa
+        time.sleep(180)
         if KEEP_ALIVE_URL:
             try:
-                requests.get(KEEP_ALIVE_URL, timeout=10)
+                requests.get(KEEP_ALIVE_URL.strip(), timeout=10)
             except Exception as e:
                 logging.warning(f"Keep-alive ping xatosi: {e}")
-
-# Gemini client
-client = genai.Client(api_key=GEMINI_API_KEY)
 
 SYSTEM_INSTRUCTION = f"""
 Siz Instagram sahifasi ({INSTAGRAM_HANDLE}) uchun AI kontent va SMM yordamchi agentisiz.
@@ -68,8 +63,15 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_text = update.message.text
     if not user_text:
         return
+
+    api_key = os.environ.get("GEMINI_API_KEY", "").strip()
+    if not api_key:
+        await update.message.reply_text("Xato: GEMINI_API_KEY topilmadi.")
+        return
+
     try:
-        response = client.models.generate_content(
+        ai_client = genai.Client(api_key=api_key)
+        response = ai_client.models.generate_content(
             model="gemini-2.5-flash",
             contents=user_text,
             config=types.GenerateContentConfig(
@@ -79,7 +81,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_text = response.text or "Javob shakllantirishda xatolik yuz berdi."
     except Exception as e:
         logging.error(f"Gemini xatosi: {e}")
-        reply_text = "Hozircha AI xizmatiga ulanishda vaqtinchalik uzilish bo‘ldi. Birozdan so‘ng qayta urinib ko‘ring."
+        reply_text = f"AI xatosi: {str(e)[:300]}"
+
     await update.message.reply_text(reply_text)
 
 def main():
