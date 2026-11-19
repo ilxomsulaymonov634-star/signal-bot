@@ -11,7 +11,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, fil
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-BOT_TOKEN = os.environ.get("9116062179:AAEkGbBgnPtjq54Z39YeJYGykbme1-y_b3I", "").strip()
+BOT_TOKEN = os.environ.get("BOT_TOKEN", "").strip()
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
 RAW_KEEP_ALIVE_URL = os.environ.get("KEEP_ALIVE_URL", "https://signal-bot-hesg.onrender.com").strip()
 KEEP_ALIVE_URL = RAW_KEEP_ALIVE_URL.strip("[]()<>\"' ").strip()
@@ -40,8 +40,8 @@ client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
 async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "Assalomu alaykum! AI Studeo boti ishga tushdi.\n"
-        "@poydevor2413 sahifasi uchun post, g'oya yoki matn mavzusini yozing."
+        "Assalomu alaykum! Bot ishga tushdi.\n"
+        "Xabar yoki mavzu yozing, javob beraman."
     )
 
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -54,14 +54,9 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     try:
-        prompt = (
-            "Sen @poydevor2413 sahifasi uchun kontent tayyorlovchi yordamchisan. "
-            "Javobni o'zbek tilida, tushunarli, chiroyli va foydali qilib yoz.\n\n"
-            f"So'rov: {user_text}"
-        )
         response = client.models.generate_content(
             model="gemini-2.5-flash",
-            contents=prompt,
+            contents=user_text,
         )
         reply_text = (response.text or "").strip() or "Javob qaytarilmadi."
         await update.message.reply_text(reply_text)
