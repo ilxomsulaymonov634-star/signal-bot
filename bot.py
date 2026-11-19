@@ -6,6 +6,7 @@ import logging
 import requests
 from flask import Flask
 from google import genai
+from google.genai import types
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
@@ -42,7 +43,7 @@ client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "Assalomu alaykum! Bot ishga tushdi.\n"
-        "Xabar yoki mavzu yozing, javob beraman."
+        "Xabar yoki mavzu yozing, tez va aniq javob beraman."
     )
 
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -54,16 +55,23 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("GEMINI_API_KEY sozlanmagan.")
         return
 
+    waiting_msg = await update.message.reply_text("⏳ Javob tayyorlanmoqda...")
+
     try:
         response = client.models.generate_content(
             model="gemini-3.8-flash",
             contents=user_text,
+            config=types.GenerateContentConfig(
+                system_instruction="Javoblarni aniq, lo'nda va ortiqcha cho'zmasdan yoz. Foydalanuvchi uzun so'rasa, faqat eng muhim nuqtalarni ber.",
+                max_output_tokens=600,
+                temperature=0.7,
+            ),
         )
         reply_text = (response.text or "").strip() or "Javob qaytarilmadi."
-        await update.message.reply_text(reply_text)
+        await waiting_msg.edit_text(reply_text)
     except Exception as e:
         logger.error(f"Gemini xatosi: {e}")
-        await update.message.reply_text(f"Xatolik yuz berdi: {e}")
+        await waiting_msg.edit_text(f"Xatolik yuz berdi: {e}")
 
 def main():
     if not BOT_TOKEN:
