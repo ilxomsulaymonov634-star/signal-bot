@@ -1,5 +1,6 @@
 import os
 import time
+import asyncio
 import threading
 import logging
 import requests
@@ -82,6 +83,9 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(reply_text)
 
 def main():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
     threading.Thread(target=run_flask, daemon=True).start()
     threading.Thread(target=keep_alive_ping, daemon=True).start()
 
