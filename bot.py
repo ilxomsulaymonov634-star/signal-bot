@@ -12,7 +12,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, fil
 
 logging.basicConfig(level=logging.INFO)
 
-BOT_TOKEN = os.environ.get("BOT_TOKEN", "9016084815:AAG4zrRit9MHn6KFM0CX5Q4_7HcpKw7HIWw")
+BOT_TOKEN = os.environ.get("BOT_TOKEN", "9116062179:AAEkGbBgnPtjq54Z39YeJYGykbme1-y_b3I")
 ADMIN_ID = int(os.environ.get("ADMIN_ID", "7850429577"))
 KEEP_ALIVE_URL = os.environ.get("KEEP_ALIVE_URL", "")
 
