@@ -40,10 +40,32 @@ def keep_alive_loop():
 
 client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
+def ask_gemini_with_retry(prompt: str) -> str:
+    last_error = None
+    for attempt in range(3):
+        try:
+            response = client.models.generate_content(
+                model="gemini-3.8-flash",
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    system_instruction="Javoblarni o'zbek tilida, aniq, lo'nda va ortiqcha cho'zmasdan yoz.",
+                    max_output_tokens=600,
+                    temperature=0.7,
+                ),
+            )
+            text = (response.text or "").strip()
+            if text:
+                return text
+        except Exception as e:
+            last_error = e
+            logger.warning(f"Urinish {attempt + 1}/3 xatosi: {e}")
+            time.sleep(2)
+    raise last_error or RuntimeError("Model javob qaytarmadi.")
+
 async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "Assalomu alaykum! Bot ishga tushdi.\n"
-        "Xabar yoki mavzu yozing, tez va aniq javob beraman."
+        "Assalomu alaykum! Bot yangilandi.\n"
+        "Savol yoki mavzu yozing, tez va aniq javob beraman."
     )
 
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -58,20 +80,22 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     waiting_msg = await update.message.reply_text("⏳ Javob tayyorlanmoqda...")
 
     try:
-        response = client.models.generate_content(
-            model="gemini-3.8-flash",
-            contents=user_text,
-            config=types.GenerateContentConfig(
-                system_instruction="Javoblarni aniq, lo'nda va ortiqcha cho'zmasdan yoz. Foydalanuvchi uzun so'rasa, faqat eng muhim nuqtalarni ber.",
-                max_output_tokens=600,
-                temperature=0.7,
-            ),
+        reply_text = await asyncio.wait_for(
+            asyncio.to_thread(ask_gemini_with_retry, user_text),
+            timeout=35.0
         )
-        reply_text = (response.text or "").strip() or "Javob qaytarilmadi."
+        if len(reply_text) > 4000:
+            reply_text = reply_text[:4000] + "..."
         await waiting_msg.edit_text(reply_text)
+    except asyncio.TimeoutError:
+        await waiting_msg.edit_text("⚠️ Server javobi kechikdi. Iltimos, savolni qisqaroq qilib qayta yuboring.")
     except Exception as e:
         logger.error(f"Gemini xatosi: {e}")
-        await waiting_msg.edit_text(f"Xatolik yuz berdi: {e}")
+        err_str = str(e)
+        if "503" in err_str or "UNAVAILABLE" in err_str:
+            await waiting_msg.edit_text("⚠️ AI serveri hozir band (503). 10 soniyadan keyin qayta yuboring.")
+        else:
+            await waiting_msg.edit_text(f"Xatolik yuz berdi: {err_str[:300]}")
 
 def main():
     if not BOT_TOKEN:
